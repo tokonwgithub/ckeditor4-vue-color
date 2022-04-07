@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" name="viewport">
+  <script src="https://wchk-oss.oss-cn-hongkong.aliyuncs.com/statics/js/jquery/v3.3.1/jquery.min.js"></script>
+   <!-- 企业微信授权登录使用 -->
+  <script src="https://res.wx.qq.com/open/js/jweixin-1.2.0.js"></script>
+  <script src="https://rescdn.qqmail.com/node/ww/wwopenmng/js/sso/wwLogin-1.0.0.js"></script>
+
+  <script >
+    var userIds = null;//
+    var WeChatEnv = {
+      /** 从联系人详情进入 */
+      CONTACT_PROFILE: "contact_profile",
+      /** 从单聊会话的工具栏进入 */
+      SINGLE_CHAT_TOOLS: "single_chat_tools",
+      /** 从群聊会话的工具栏进入 */
+      GROUP_CHAT_TOOLS: "group_chat_tools",
+      /** 除以上场景之外进入，例如工作台，聊天会话等 */
+      NORMAL: "normal",
+    };
+    var agentid = null,
+    urls = null,
+    states = 'wyuser@tools1';
+
+    /**
+ * 获取url 参数
+ * @function
+ */
+    function getQueryString(name, url) {
+      let reg = new RegExp("(^|\\?|&)" + name + "=([^&]*)(\\s|&|$)", "i");
+      if (reg.test(url)) return unescape(RegExp.$2.replace(/\+/g, " "));
+    }
+    function wxChatSign(datas, callback) {
+      $.ajax({
+        url:"https://previewconsoleapi.classbro.com/routapi/uc/auth/sign",
+        dataType: "json",
+        type: "POST",
+        data:JSON.stringify(datas),
+        headers:{
+          "Content-Type":"application/json;charset=UTF-8"
+        },
+        success: (res) => {
+          callback(res)
+        },
+        error:(res)=>{
+          alert(res)
+        }
+      });
+    }
+    function wxChatgetman(callback) {
+      $.ajax({
+        url:"https://getman.cn/mock/cls/mock",
+        dataType: "json",
+        type: "get",
+        success: (res) => {
+          callback(res)
+        },
+        error:(res)=>{
+          alert(res)
+        }
+      });
+    }
+
+    function wxConfig() {
+     wxChatSign({
+        state:states,
+        url: urls,
+        type: "config",
+      },function(res){
+        if (res.status === 200) {
+          console.log(res.body,'接口返回')
+          const { appId, timestamp, nonceStr, signature } = res.body || {};
+          /**
+           * {
+            beta: true, // 必须这么写，否则wx.invoke调用形式的jsapi会有问题
+            debug: true, // 开启调试模式,调用的所有api的返回值会在客户端alert出来，若要查看传入的参数，可以在pc端打开，参数信息会通过log打出，仅在pc端时才会打印。
+            appId, // 必填，企业微信的corpID
+            timestamp, // 必填，生成签名的时间戳
+            nonceStr, // 必填，生成签名的随机串
+            signature, // 必填，签名，见 附录-JS-SDK使用权限签名算法
+            jsApiList: ["openDefaultBrowser"], // 必填，需要使用的JS接口列表，凡是要调用的接口都需要传进来'chooseImage' , 'openDefaultBrowser' , 'getCurExternalContact'
+          }
+          */
+          const _config = {
+            beta: true, // 必须这么写，否则wx.invoke调用形式的jsapi会有问题
+            debug: true, // 开启调试模式,调用的所有api的返回值会在客户端alert出来，若要查看传入的参数，可以在pc端打开，参数信息会通过log打出，仅在pc端时才会打印。
+            appId, // 必填，企业微信的corpID
+            timestamp, // 必填，生成签名的时间戳
+            nonceStr, // 必填，生成签名的随机串
+            signature, // 必填，签名，见 附录-JS-SDK使用权限签名算法
+            jsApiList: [
+              // "openDefaultBrowser",
+             "selectExternalContact",
+              "selectEnterpriseContact",
+              "openEnterpriseChats",
+              "createCorpGroupChat"
+              ], // 必填，需要使用的JS接口列表，凡是要调用的接口都需要传进来'chooseImage' , 'openDefaultBrowser' , 'getCurExternalContact'
+          };
+          console.log(_config, " _config");
+          // alert(JSON.stringify(_config));
+          wx.config(_config);
+          ready()
+        } else alert("获取企业微信config接口异常") ;
+      });
+  }
+  function checkJsApi(){
+    wx.checkJsApi({
+      jsApiList: ['selectExternalContact','selectEnterpriseContact','openEnterpriseChat'], // 需要检测的JS接口列表
+      success: function(res) {
+        console.log(res,'000')
+        let lens = 0;
+        for(let i in res.checkResult){
+          if(res.checkResult[i]){
+            lens += 1
+          }
+        }
+          // 以键值对的形式返回，可用的api值true，不可用为false
+          // 如：{"checkResult":{"chooseImage":true},"errMsg":"checkJsApi:ok"}
+      }
+    });
+  }
+
+  function ready() {
+    // return new Promise(function(resolve) {
+      wx.ready(function() {
+        wxAgentConfig();
+      });
+    // });
+  }
+  /**
+   * 应用配置
+   */
+  function wxAgentConfig() {
+    // return new Promise((resolve, reject) => {
+      // ready().then(() => {
+        wxChatSign({
+          state:states,
+          url: urls,
+          type: "agent_config",
+        },function(res){
+          console.log(res,'接口二次返回')
+          if (res.status == 200) {
+            const {
+              appId,
+              agentId,
+              timestamp,
+              nonceStr,
+              signature,
+            } = res.body || {};
+            agentid = agentId;
+            /**
+             * corpid, // 必填，企业微信的corpid，必须与当前登录的企业一致
+              agentid, // 必填，企业微信的应用id （e.g. 1000247）
+              timestamp, // 必填，生成签名的时间戳
+              nonceStr, // 必填，生成签名的随机串
+              signature, // 必填，签名，见附录-JS-SDK使用权限签名算法
+            */
+            const _agentConfig = {
+              corpid:appId, // 必填，企业微信的corpid，必须与当前登录的企业一致
+              agentId:agentid, // 必填，企业微信的应用id （e.g. 1000247）
+              timestamp, // 必填，生成签名的时间戳
+              nonceStr, // 必填，生成签名的随机串
+              signature, // 必填，签名，见附录-JS-SDK使用权限签名算法
+            };
+            console.log(_agentConfig, " _agentConfig");
+            // alert(JSON.stringify(_agentConfig));
+            wx.agentConfig({
+              beta: true,
+              corpid:appId, // 必填，企业微信的corpid，必须与当前登录的企业一致
+              agentid:agentid, // 必填，企业微信的应用id （e.g. 1000247）
+              timestamp, // 必填，生成签名的时间戳
+              nonceStr, // 必填，生成签名的随机串
+              signature,
+              jsApiList: [
+                "getCurExternalContact",
+                "selectExternalContact",
+                "selectEnterpriseContact",
+                "openEnterpriseChat",
+                "createCorpGroupChat"
+              ], //必填
+              success: function(res) {
+                alert("agent成功！");
+                // alert(JSON.stringify(res));
+                return true;
+              },
+              fail: function(rej) {
+                return false;
+              },
+            });
+          }
+        });
+
+      // });
+    // });
+  }
+
+  /**
+   * 自动鉴权
+   */
+  function autoAuth() {
+    try {
+      wxConfig();
+      // wxAgentConfig();
+
+      return true;
+    } catch (error) {
+      console.error(error);
+      throw alert("企业微信 鉴权失败");
+    }
+  }
+
+    /**
+     * 获取进入H5页面的入口环境
+     */
+    function getWeChatEnv() {
+      // return new Promise((resolve) => {
+        console.log(wx)
+        wx.invoke("getContext", {}, function(res) {
+          if (res.err_msg == "getContext:ok") {
+            let entry = res.entry; //返回进入H5页面的入口类型，目前有normal、contact_profile、single_chat_tools、group_chat_tools
+            return entry;
+          } else {
+            //错误处理
+          }
+        });
+      // });
+    }
+    // 选人接口方法
+    function selectEnterpriseContacts() {
+      // checkJsApi();
+      // return new Promise((resolve, reject) => {
+        wx.invoke("selectEnterpriseContact", {
+                "fromDepartmentId": -1,// 必填，表示打开的通讯录从指定的部门开始展示，-1表示自己所在部门开始, 0表示从最上层开始
+                "mode": "multi",// 必填，选择模式，single表示单选，multi表示多选
+                "type": ["department", "user"],// 必填，选择限制类型，指定department、user中的一个或者多个
+                "selectedDepartmentIds": [],// 非必填，已选部门ID列表。用于多次选人时可重入，single模式下请勿填入多个id
+                "selectedUserIds": []// 非必填，已选用户ID列表。用于多次选人时可重入，single模式下请勿填入多个id
+        },function(res){
+                if (res.err_msg == "selectEnterpriseContact:ok")
+                {
+                        if(typeof res.result == 'string')
+                        {
+                                res.result = JSON.parse(res.result) //由于目前各个终端尚未完全兼容，需要开发者额外判断result类型以保证在各个终端的兼容性
+                        }
+                        var selectedDepartmentList = res.result.departmentList;// 已选的部门列表
+                        for (var i = 0; i < selectedDepartmentList.length; i++)
+                        {
+                                var department = selectedDepartmentList[i];
+                                var departmentId = department.id;// 已选的单个部门ID
+                                var departemntName = department.name;// 已选的单个部门名称
+                        }
+                        var selectedUserList = res.result.userList; // 已选的成员列表
+                        for (var i = 0; i < selectedUserList.length; i++)
+                        {
+                                var user = selectedUserList[i];
+                                var userId = user.id; // 已选的单个成员ID
+                                var userName = user.name;// 已选的单个成员名称
+                                var userAvatar= user.avatar;// 已选的单个成员头像
+                        }
+                }
+        });
+      // });
+    }
+    //外部联系人选人接口->调用此接口将唤起该成员里所有的外部联系人列表，获取员工选择的外部联系人的userid
+
+    function selectExternalContacts() {
+
+      // return new Promise((resolve, reject) => {
+        wx.invoke('selectExternalContact', {
+                        "filterType": 0, //0表示展示全部外部联系人列表，1表示仅展示未曾选择过的外部联系人。默认值为0；除了0与1，其他值非法。在企业微信2.4.22及以后版本支持该参数
+            }, function(res){
+            if(res.err_msg == "selectExternalContact:ok"){
+                userIds  = res.userIds ; //返回此次选择的外部联系人userId列表，数组类型
+            }else {
+                //错误处理
+            }
+        });
+      // })
+    }
+    let userId = '',
+      externalUserIds = '',
+      groupName = 'Zhenhao_31_Writing materials#Capital Budgeting&FinDecision__500_R.Z1_16Jul_Vincent';
+   function wxChatgetmanFun(){
+      wxChatgetman(function(res){
+          userId = res.userIds;
+          externalUserIds = res.externalUserIds;
+          $('.show-tips').css('display','block');
+          $('.usename').text(userId);
+          $('.waibiname').text(externalUserIds);
+        })
+    }
+
+    function openEnterpriseChats(){
+        wx.openEnterpriseChat({
+          // 注意：userIds和externalUserIds至少选填一个。内部群最多2000人；外部群最多500人；如果有微信联系人，最多40人
+          userIds: userId,    //参与会话的企业成员列表，格式为userid1;userid2;...，用分号隔开。
+          externalUserIds:externalUserIds, // 参与会话的外部联系人列表，格式为userId1;userId2;…，用分号隔开。
+          groupName: groupName,  // 会话名称。单聊时该参数传入空字符串""即可。
+          chatId: "", // 若要打开已有会话，需指定此参数。如果是新建会话，chatId必须为空串
+          success: function(res) {
+              $('.show-tips').css('display','none');
+              var chatId = res.chatId; //返回当前群聊ID，仅当使用agentConfig注入该接口权限时才返回chatId
+              // 回调
+          },
+          fail: function(res) {
+            console.log(res)
+              if(res.errMsg.indexOf('function not exist') > -1){
+                  alert('版本过低请升级')
+              }
+          }
+        });
+
+    }
+    function createCorpGroupChats(){
+      wx.invoke("createCorpGroupChat", {
+        groupName: "A企与B企互联讨论组",  // 必填，会话名称。单聊时该参数传入空字符串""即可。
+        userIds: ["lisi","lisi2"],    //参与会话的企业成员列表，仅自建应用使用，第三方应用会忽略该字段
+        openUserIds: ["wabc3","wbcde"],// 参与会话的企业成员列表，仅第三方应用使用，自建应用会忽略该字段
+        corpGroupUserIds: [ // 非必填， 参与会话的互联企业成员列表
+              {
+                  corpId:"ww3333",                 // 企业CORPID
+                  userId:"userid123",                 // 成员ID，仅自建应用使用
+                  openUserId:"wx1111"                 // 成员OPEN_USERID，仅第三方应用使用
+              },
+              {
+                  corpId:"ww4444",                // 企业CORPID
+                  userId:"userid123",                 // 成员ID，仅自建应用使用
+                  openUserId:"wx1111"                 // 成员OPEN_USERID，仅第三方应用使用
+              }
+        ]
+        },function(res) {
+            if (res.err_msg == "createCorpGroupChat:ok") {
+                var chatId = res.chatId;
+            }
+        }
+    );
+    }
+    function validateEnv() {
+      const _env = getWeChatEnv();
+      console.log("当前入口环境:", _env);
+      return _env != WeChatEnv.NORMAL;
+    }
+    $(document).ready(function () {
+      urls = window.location.href;
+      autoAuth();
+
+      // if(!validateEnv()){
+      //   alert('请前往与客户的聊天窗口右侧工具栏查看')
+      // }
+
+    })
+  </script>
+  <title>qywx</title>
+  <style>
+    .btn-styles{
+      display: block;
+      margin-bottom: 20px;
+      padding: 0 10px;
+      height: 45px;
+      line-height: 45px;
+      font-size: 18px;
+      font-weight: 500;
+      color: #FFFFFF;
+      border: none;
+      border-radius: 4px;
+      background: #4979FF;
+    }
+    .show-tips{
+      display: none;
+      position: fixed;
+      top: 200px;
+      left: 50%;
+      padding: 10px;
+      margin-left: -150px;
+      margin-top: -150px;
+      top: 50%;
+      width: 240px;
+      height: 200px;
+      background: #ffffff;
+      box-shadow: 0px 1px 9px 0px rgba(0, 0, 0, 0.5);
+    border-radius: 2px;
+    }
+    .show-tips p{
+      word-break: break-all;
+    }
+    .show-tips b{
+      color: #4979FF;
+    }
+  </style>
+</head>
+
+<body>
+  <div>
+    <button class="btn-styles" onclick="selectEnterpriseContacts()">选人接口调用</button>
+    <button class="btn-styles" onclick="selectExternalContacts()">外部联系人选人接口调用</button>
+    <button class="btn-styles" onclick="wxChatgetmanFun()">打开会话</button>
+    <button class="btn-styles" onclick="createCorpGroupChats()">创建企业互联会话</button>
+
+    <div class="show-tips">
+      <p>您确认将内部联系人<b class="usename"></b>外部联系人<b class="waibiname"></b>等人拉入群聊会话?</p>
+      <button class="btn-styles" onclick="openEnterpriseChats()">确定</button>
+    </div>
+  </div>
+  <script>
+  </script>
+</body>
+
+</html>

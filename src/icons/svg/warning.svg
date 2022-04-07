@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="50px" height="50px" viewBox="0 0 50 50" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 63.1 (92452) - https://sketch.com -->
+    <title>提示</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <filter x="-15.0%" y="-15.0%" width="130.0%" height="130.0%" filterUnits="objectBoundingBox" id="filter-1">
+            <feGaussianBlur stdDeviation="2" in="SourceGraphic"></feGaussianBlur>
+        </filter>
+    </defs>
+    <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="离职申请-审批人-同意申请" transform="translate(-165.000000, -333.000000)">
+            <g id="编组-5" transform="translate(68.000000, 312.000000)">
+                <g id="提示" transform="translate(100.000000, 24.000000)">
+                    <circle id="椭圆形" fill="#C98437" opacity="0.400000006" filter="url(#filter-1)" cx="22" cy="22" r="20"></circle>
+                    <ellipse id="椭圆形" fill="#E59945" cx="20.4878049" cy="20" rx="20.4878049" ry="20"></ellipse>
+                    <g id="感叹号" transform="translate(20.000000, 20.000000) scale(-1, 1) translate(-20.000000, -20.000000) translate(18.000000, 9.000000)" fill="#FFFFFF" fill-rule="nonzero">
+                        <path d="M0.437655204,20.4285588 C0.437655204,21.296329 1.13733163,22 2.00020067,22 C2.86304462,22 3.56272105,21.296329 3.56272105,20.4285588 C3.56272105,19.5607887 2.86304462,18.8570924 2.00020067,18.8570924 C1.13693029,18.8570924 0.437655204,19.5607634 0.437655204,20.4285588 Z M4,2.01121667 C4,0.900463826 3.10459779,0 1.99977425,0 C0.894950711,0 0,0.900489052 0,2.01121667 C0,2.05150356 0.00168058795,2.09136161 0.00373742694,2.13124488 L0.0032859257,2.13124488 L0.437253869,14.9605651 C0.437253869,15.8283352 1.13693029,16.5320063 1.99977425,16.5320063 C2.86261821,16.5320063 3.56229463,15.8283352 3.56229463,14.9605651 L3.99626257,2.13124488 L3.99581107,2.13124488 C3.99831941,2.09136161 4,2.05152879 4,2.01121667 L4,2.01121667 Z" id="形状"></path>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
